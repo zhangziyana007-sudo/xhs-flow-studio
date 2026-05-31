@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Knowledge Card · Content</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="content-page">
+  <div class="canvas">
+    <div class="page-header">
+      <div class="page-number">{{pageNum}}</div>
+      <div>
+        <div class="page-title">{{cardTitle}}</div>
+        {{#if cardSubtitle}}
+        <div class="page-subtitle">{{cardSubtitle}}</div>
+        {{/if}}
+      </div>
+    </div>
+
+    {{#if category}}
+    <span class="category-tag">{{category}}</span>
+    {{/if}}
+
+    <div class="knowledge-points">
+      {{#each points}}
+      <div class="point-card">
+        <div class="point-index">POINT {{@index1}}</div>
+        <div class="point-text">{{this}}</div>
+      </div>
+      {{/each}}
+    </div>
+
+    {{#if highlight}}
+    <div class="highlight-block">
+      <div class="highlight-icon">💡</div>
+      <div class="highlight-text">{{highlight}}</div>
+    </div>
+    {{/if}}
+
+    <div class="page-footer">
+      <span class="footer-left">{{source}}</span>
+      <span class="footer-right">{{pageNum}} / {{totalPages}}</span>
+    </div>
+  </div>
+</body>
+</html>

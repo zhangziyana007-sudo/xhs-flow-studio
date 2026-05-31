@@ -1,0 +1,21 @@
+appId: com.flowstudio.app
+productName: FlowStudio
+directories:
+  buildResources: resources
+  output: dist
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.*'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+win:
+  executableName: FlowStudio
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage
+mac:
+  target:
+    - dmg
