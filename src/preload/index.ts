@@ -37,7 +37,7 @@ const api = {
     update: (id: string, updates: unknown) => ipcRenderer.invoke('task:update', id, updates),
     runStep: (id: string, step: string) => ipcRenderer.invoke('task:runStep', id, step),
     getOutput: (id: string) => ipcRenderer.invoke('task:getOutput', id),
-    aiConfig: (message: string) => ipcRenderer.invoke('source:aiConfig', message)
+    aiConfig: (taskId: string, message: string, history?: any[]) => ipcRenderer.invoke('source:aiConfig', taskId, message, history)
   },
 
   // 知识创作（集成在任务卡片内）
