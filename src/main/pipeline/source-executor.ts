@@ -94,6 +94,8 @@ async function executeCard(
       return executeManualText(card)
     case 'rss':
       return executeRss(card, log)
+    case 'ai-search':
+      return executeAiSearch(card, log)
     default:
       throw new Error(`不支持的卡片类型: ${card.type}`)
   }
@@ -283,4 +285,72 @@ function extractTextFromHtml(html: string): string {
 /** 去除 HTML 标签 */
 function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim()
+}
+
+/** AI 搜索卡片 — 调用 LLM API（支持联网搜索）获取信息作为素材 */
+async function executeAiSearch(card: SourceCard, log: (msg: string) => void): Promise<CardResult> {
+  const { llmBaseUrl, llmApiKey, llmModel, searchPrompt, enableWebSearch } = card.config
+  if (!llmApiKey) throw new Error('未配置 AI 搜索的 API Key')
+  if (!searchPrompt) throw new Error('未配置搜索提示词')
+
+  const baseUrl = llmBaseUrl || 'https://api.x.ai/v1'
+  const model = llmModel || 'grok-3'
+
+  log(`  [AI搜索] 模型: ${model} | 联网: ${enableWebSearch ? '是' : '否'}`)
+  log(`  [AI搜索] 提示: ${searchPrompt.slice(0, 80)}...`)
+
+  const messages = [
+    {
+      role: 'system',
+      content: '你是一个信息搜索助手。请根据用户的查询要求，搜索并整理相关信息。输出格式为结构化的信息列表，每条信息包含标题、摘要、来源（如有）。用中文回复。'
+    },
+    { role: 'user', content: searchPrompt }
+  ]
+
+  const body: any = { model, messages, temperature: 0.3 }
+
+  // 根据不同 API 提供商启用联网搜索
+  if (enableWebSearch) {
+    // xAI Grok 格式
+    if (baseUrl.includes('x.ai')) {
+      body.search_parameters = { mode: 'auto' }
+    }
+    // OpenAI 兼容格式（部分提供商支持）
+    else {
+      body.tools = [{ type: 'web_search' }]
+    }
+  }
+
+  const resp = await fetch(`${baseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${llmApiKey}`
+    },
+    body: JSON.stringify(body)
+  })
+
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => '')
+    throw new Error(`AI 搜索 API ${resp.status}: ${errText.slice(0, 300)}`)
+  }
+
+  const data: any = await resp.json()
+  const content = data.choices?.[0]?.message?.content || ''
+
+  if (!content.trim()) {
+    throw new Error('AI 搜索未返回有效内容')
+  }
+
+  log(`  ✓ AI 搜索返回 ${content.length} 字符`)
+
+  // 统计条目数（以 ## 或数字列表开头的行数）
+  const itemCount = Math.max(1, (content.match(/^(?:##|\d+[\.\)、])/gm) || []).length)
+
+  return {
+    cardId: card.id,
+    cardName: card.name,
+    itemCount,
+    markdown: `## AI 搜索结果 — ${card.name}\n\n> 模型: ${model} | 联网搜索: ${enableWebSearch ? '是' : '否'}\n> 提示: ${searchPrompt}\n\n---\n\n${content}`
+  }
 }

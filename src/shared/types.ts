@@ -2,7 +2,7 @@
 export interface SourceCard {
   id: string
   name: string                  // 如 "AI热点新闻拉取"、"网页文章抓取"
-  type: 'api-fetch' | 'url-scrape' | 'rss' | 'video-subtitle' | 'manual-text'
+  type: 'api-fetch' | 'url-scrape' | 'rss' | 'video-subtitle' | 'manual-text' | 'ai-search'
   runMode: 'auto' | 'manual'   // auto=任务运行时自动执行, manual=需手动输入URL后执行
   config: {
     // api-fetch 配置
@@ -18,6 +18,12 @@ export interface SourceCard {
     videoUrl?: string
     // manual-text 配置
     text?: string
+    // ai-search 配置
+    llmBaseUrl?: string         // LLM API 地址（如 https://api.x.ai/v1）
+    llmApiKey?: string          // LLM API Key
+    llmModel?: string           // 模型名（如 grok-3）
+    searchPrompt?: string       // 搜索/查询提示词
+    enableWebSearch?: boolean   // 是否启用联网搜索（模型需支持）
     // 通用
     keywords?: string[]
     maxItems?: number

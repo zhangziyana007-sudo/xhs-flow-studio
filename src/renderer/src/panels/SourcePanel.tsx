@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Database, Globe, Rss, Video, FileText, ArrowRight, Plus, Trash2, Play, Loader2, ToggleLeft, ToggleRight, AlertCircle, Sparkles, Send, Check, X } from 'lucide-react'
+import { Database, Globe, Rss, Video, FileText, ArrowRight, Plus, Trash2, Play, Loader2, ToggleLeft, ToggleRight, AlertCircle, Sparkles, Send, Check, X, Search } from 'lucide-react'
 import type { Task, SourceCard } from '../../../shared/types'
 
 interface Props {
@@ -15,7 +15,8 @@ const sourceTypeInfo: Record<SourceType, { label: string; icon: typeof Database;
   'url-scrape': { label: '网页抓取', icon: Globe, desc: '抓取指定 URL 的内容' },
   'rss': { label: 'RSS 订阅', icon: Rss, desc: '订阅 RSS 源获取更新' },
   'video-subtitle': { label: '视频字幕', icon: Video, desc: '提取视频字幕作为素材' },
-  'manual-text': { label: '手动文本', icon: FileText, desc: '直接输入文本素材' }
+  'manual-text': { label: '手动文本', icon: FileText, desc: '直接输入文本素材' },
+  'ai-search': { label: 'AI 搜索', icon: Search, desc: '调用 LLM 联网搜索获取信息' }
 }
 
 const api = window.api
@@ -68,12 +69,18 @@ export default function SourcePanel({ taskId, onNext, onTaskNameChange }: Props)
       id: `card-${Date.now()}`,
       name: sourceTypeInfo[type].label,
       type,
-      runMode: type === 'api-fetch' || type === 'rss' ? 'auto' : 'manual',
+      runMode: type === 'api-fetch' || type === 'rss' || type === 'ai-search' ? 'auto' : 'manual',
       config: type === 'api-fetch' ? {
         apiUrl: 'https://aihot.virxact.com',
         category: 'ai-models',
         sinceHours: 24,
         minCount: 25
+      } : type === 'ai-search' ? {
+        llmBaseUrl: 'https://api.x.ai/v1',
+        llmModel: 'grok-3',
+        llmApiKey: '',
+        searchPrompt: '',
+        enableWebSearch: true
       } : {}
     }
     saveCards([...cards, newCard])
@@ -361,6 +368,51 @@ export default function SourcePanel({ taskId, onNext, onTaskNameChange }: Props)
                         rows={4}
                         placeholder="输入文本素材..."
                       />
+                    </div>
+                  )}
+
+                  {card.type === 'ai-search' && (
+                    <div className="mt-3 space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={card.config.llmBaseUrl || ''}
+                          onChange={(e) => updateCard(card.id, { llmBaseUrl: e.target.value })}
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-mono bg-gray-50 focus:outline-none focus:border-blue-300"
+                          placeholder="API Base URL (如 https://api.x.ai/v1)"
+                        />
+                        <input
+                          type="text"
+                          value={card.config.llmModel || ''}
+                          onChange={(e) => updateCard(card.id, { llmModel: e.target.value })}
+                          className="w-32 px-3 py-1.5 rounded-lg border border-gray-200 text-xs bg-gray-50 focus:outline-none focus:border-blue-300"
+                          placeholder="模型名"
+                        />
+                      </div>
+                      <input
+                        type="password"
+                        value={card.config.llmApiKey || ''}
+                        onChange={(e) => updateCard(card.id, { llmApiKey: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-mono bg-gray-50 focus:outline-none focus:border-blue-300"
+                        placeholder="API Key"
+                      />
+                      <textarea
+                        value={card.config.searchPrompt || ''}
+                        onChange={(e) => updateCard(card.id, { searchPrompt: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs bg-gray-50 focus:outline-none focus:border-blue-300 resize-none"
+                        rows={3}
+                        placeholder="搜索提示词 (如：搜索今天 AI 领域最新动态，包括新模型发布、重大融资、产品更新)"
+                      />
+                      <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={card.config.enableWebSearch ?? true}
+                          onChange={(e) => updateCard(card.id, { enableWebSearch: e.target.checked })}
+                          className="rounded border-gray-300"
+                        />
+                        启用联网搜索（需模型支持，如 Grok）
+                      </label>
+                      <p className="text-[11px] text-gray-400">AI 模型会联网搜索信息，结果作为素材输入到下一步 AI 创作</p>
                     </div>
                   )}
                 </div>
