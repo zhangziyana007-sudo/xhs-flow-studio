@@ -176,6 +176,71 @@ export function registerIpcHandlers(): void {
     return { images, dataJson, outputPath }
   })
 
+  // ── AI 配置助手 ─────────────────────────────────────
+
+  ipcMain.handle('source:aiConfig', async (_event, userMessage: string) => {
+    const settings = await loadSettings()
+    const apiKey = settings.deepseekApiKey
+    if (!apiKey) return { success: false, error: '请先在设置中配置 DeepSeek API Key' }
+
+    const baseUrl = settings.aiBaseUrl || 'https://api.deepseek.com'
+    const model = settings.aiModel || 'deepseek-chat'
+
+    const systemPrompt = `你是 FlowStudio 数据源配置助手。用户会用自然语言描述他想获取的内容，你帮他生成对应的数据源卡片配置。
+
+可用数据源类型：
+1. api-fetch: 从 aihot.virxact.com API 拉取新闻，可选 category: ai-models/ai-coding/ai-agents/ai-products/industry/papers
+2. url-scrape: 抓取指定网页内容
+3. rss: 订阅 RSS 源
+4. manual-text: 手动文本输入
+
+输出要求：
+- 返回一个 JSON 数组，每个元素是一个 SourceCard 配置
+- 格式: [{"name":"名称","type":"类型","runMode":"auto或manual","config":{...}}]
+- 对 api-fetch 类型: config 包含 apiUrl, category, sinceHours(默认24), minCount(默认25)
+- 对 url-scrape 类型: config 包含 urls 数组
+- 对 rss 类型: config 包含 feedUrl
+- 对 manual-text 类型: config 包含 text
+
+只输出 JSON 数组，不要任何额外解释。`
+
+    try {
+      const resp = await fetch(`${baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMessage }
+          ],
+          temperature: 0.3,
+          response_format: { type: 'json_object' }
+        })
+      })
+      if (!resp.ok) {
+        const errText = await resp.text()
+        return { success: false, error: `API 调用失败: ${resp.status} ${errText.slice(0, 200)}` }
+      }
+      const data = await resp.json() as any
+      const content = data.choices?.[0]?.message?.content || ''
+      // 解析 JSON（可能被包裹在 ```json ... ``` 里）
+      let jsonStr = content.trim()
+      if (jsonStr.startsWith('```')) {
+        jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+      }
+      const parsed = JSON.parse(jsonStr)
+      // 支持 {cards:[...]} 或直接数组
+      const cards = Array.isArray(parsed) ? parsed : (parsed.cards || [parsed])
+      return { success: true, cards }
+    } catch (err: any) {
+      return { success: false, error: err.message }
+    }
+  })
+
   // ── 通用操作 ─────────────────────────────────────
 
   ipcMain.handle('shell:openPath', async (_event, path: string) => {

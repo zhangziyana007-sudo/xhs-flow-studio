@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Database, Globe, Rss, Video, FileText, ArrowRight, Plus, Trash2, Play, Loader2, ToggleLeft, ToggleRight, AlertCircle } from 'lucide-react'
+import { Database, Globe, Rss, Video, FileText, ArrowRight, Plus, Trash2, Play, Loader2, ToggleLeft, ToggleRight, AlertCircle, Sparkles, Send, Check, X } from 'lucide-react'
 import type { Task, SourceCard } from '../../../shared/types'
 
 interface Props {
@@ -29,6 +29,11 @@ export default function SourcePanel({ taskId, onNext, onTaskNameChange }: Props)
   const [showAddCard, setShowAddCard] = useState(false)
   const [taskName, setTaskName] = useState('')
   const [taskDesc, setTaskDesc] = useState('')
+  const [aiInput, setAiInput] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiSuggestions, setAiSuggestions] = useState<any[] | null>(null)
+  const [aiError, setAiError] = useState('')
+  const [showAiHelper, setShowAiHelper] = useState(false)
 
   const loadTask = useCallback(async () => {
     if (!api || !taskId) { setLoading(false); return }
@@ -102,6 +107,35 @@ export default function SourcePanel({ taskId, onNext, onTaskNameChange }: Props)
     }
   }
 
+  const handleAiConfig = async () => {
+    if (!api || !aiInput.trim()) return
+    setAiLoading(true)
+    setAiError('')
+    setAiSuggestions(null)
+    const result = await api.task.aiConfig(aiInput.trim())
+    setAiLoading(false)
+    if (result.success && result.cards?.length) {
+      setAiSuggestions(result.cards)
+    } else {
+      setAiError(result.error || '未能生成配置建议')
+    }
+  }
+
+  const handleAcceptAiCards = async () => {
+    if (!aiSuggestions) return
+    const newCards: SourceCard[] = aiSuggestions.map((c: any) => ({
+      id: `card-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: c.name || '数据源',
+      type: c.type || 'api-fetch',
+      runMode: c.runMode || 'auto',
+      config: c.config || {}
+    }))
+    await saveCards([...cards, ...newCards])
+    setAiSuggestions(null)
+    setAiInput('')
+    setShowAiHelper(false)
+  }
+
   if (loading) {
     return <div className="h-full flex items-center justify-center"><Loader2 size={24} className="animate-spin text-gray-400" /></div>
   }
@@ -139,6 +173,76 @@ export default function SourcePanel({ taskId, onNext, onTaskNameChange }: Props)
           {runResult.message}
         </div>
       )}
+
+      {/* AI 配置助手 */}
+      <div className="mx-6 mt-4">
+        <button
+          onClick={() => setShowAiHelper(!showAiHelper)}
+          className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 transition-colors"
+        >
+          <Sparkles size={16} />
+          <span className="font-medium">AI 配置助手</span>
+          <span className="text-xs text-gray-400">— 用自然语言描述你想要的数据源</span>
+        </button>
+        {showAiHelper && (
+          <div className="mt-3 p-4 rounded-xl border border-purple-100 bg-purple-50/50">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !aiLoading && handleAiConfig()}
+                className="flex-1 px-3 py-2 rounded-lg border border-purple-200 text-sm bg-white focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                placeholder="例如：每天拉取 AI 模型和编程工具相关的热点新闻"
+                disabled={aiLoading}
+              />
+              <button
+                onClick={handleAiConfig}
+                disabled={aiLoading || !aiInput.trim()}
+                className="px-3 py-2 rounded-lg bg-purple-500 text-white hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              </button>
+            </div>
+
+            {aiError && (
+              <p className="mt-2 text-xs text-red-500">{aiError}</p>
+            )}
+
+            {aiSuggestions && (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs text-purple-700 font-medium">AI 建议添加以下数据源：</p>
+                {aiSuggestions.map((card, i) => (
+                  <div key={i} className="flex items-center gap-3 px-3 py-2 bg-white rounded-lg border border-purple-100 text-sm">
+                    <Database size={14} className="text-purple-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-gray-800">{card.name}</span>
+                      <span className="text-xs text-gray-400 ml-2">{card.type}</span>
+                      {card.config?.category && <span className="text-xs text-purple-400 ml-1">({card.config.category})</span>}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={handleAcceptAiCards}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-500 text-white text-xs hover:bg-green-600 transition-colors"
+                  >
+                    <Check size={12} />
+                    采纳
+                  </button>
+                  <button
+                    onClick={() => { setAiSuggestions(null); setAiInput('') }}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-200 text-gray-600 text-xs hover:bg-gray-300 transition-colors"
+                  >
+                    <X size={12} />
+                    忽略
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* 任务基本信息 */}
       <div className="px-6 pt-4 pb-2 space-y-2 border-b border-gray-100">

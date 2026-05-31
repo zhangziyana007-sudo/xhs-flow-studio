@@ -15,6 +15,7 @@ declare global {
         update: (id: string, updates: Partial<Pick<Task, 'name' | 'description' | 'pipeline' | 'trigger'>>) => Promise<{ success: boolean; task?: Task; error?: string }>
         runStep: (id: string, step: string) => Promise<{ success: boolean; error?: string; [key: string]: any }>
         getOutput: (id: string) => Promise<{ images: string[]; dataJson: any; outputPath?: string }>
+        aiConfig: (message: string) => Promise<{ success: boolean; cards?: any[]; error?: string }>
       }
       creative: {
         createTask: (name?: string) => Promise<Task>
