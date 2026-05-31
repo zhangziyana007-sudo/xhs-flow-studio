@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Download, Image, Eye, Play, Loader2, AlertCircle, FolderOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Task } from '../../../shared/types'
+import AgentChat from '../components/AgentChat'
 
 interface Props {
   taskId: string | null
@@ -133,6 +134,19 @@ export default function PreviewPanel({ taskId }: Props) {
           </div>
         )}
       </div>
+
+      {/* AI Agent */}
+      {taskId && (
+        <div className="px-6 pb-4">
+          <AgentChat
+            taskId={taskId}
+            invoke={(tid, msg, hist) => api!.agent.preview(tid, msg, hist)}
+            onAction={loadOutput}
+            placeholder="例如：帮我执行截图 / 运行完整流程"
+            description="AI 助手可以执行截图、运行全流程、查看输出信息"
+          />
+        </div>
+      )}
     </div>
   )
 }

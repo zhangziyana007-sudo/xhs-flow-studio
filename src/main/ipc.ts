@@ -13,6 +13,10 @@ import {
 import { executeTask, createDefaultAIDailyTask, executeCreativeTask, createCreativeTask, executeTaskStep } from './task-executor'
 import { getTask } from './task-store'
 import { runSourceAgent } from './source-agent'
+import { runGenerateAgent } from './generate-agent'
+import { runStyleAgent } from './style-agent'
+import { runPreviewAgent } from './preview-agent'
+import { runTriggerAgent } from './trigger-agent'
 import type { Task, PipelineConfig } from '../shared/types'
 
 export function registerIpcHandlers(): void {
@@ -188,6 +192,42 @@ export function registerIpcHandlers(): void {
         actions: result.actions,
         updatedTask: result.updatedTask
       }
+    } catch (err: any) {
+      return { success: false, error: err.message }
+    }
+  })
+
+  ipcMain.handle('generate:agent', async (_event, taskId: string, userMessage: string, history?: any[]) => {
+    try {
+      const result = await runGenerateAgent(taskId, userMessage, history || [])
+      return { success: true, reply: result.reply, actions: result.actions }
+    } catch (err: any) {
+      return { success: false, error: err.message }
+    }
+  })
+
+  ipcMain.handle('style:agent', async (_event, taskId: string, userMessage: string, history?: any[]) => {
+    try {
+      const result = await runStyleAgent(taskId, userMessage, history || [])
+      return { success: true, reply: result.reply, actions: result.actions }
+    } catch (err: any) {
+      return { success: false, error: err.message }
+    }
+  })
+
+  ipcMain.handle('preview:agent', async (_event, taskId: string, userMessage: string, history?: any[]) => {
+    try {
+      const result = await runPreviewAgent(taskId, userMessage, history || [])
+      return { success: true, reply: result.reply, actions: result.actions }
+    } catch (err: any) {
+      return { success: false, error: err.message }
+    }
+  })
+
+  ipcMain.handle('trigger:agent', async (_event, taskId: string, userMessage: string, history?: any[]) => {
+    try {
+      const result = await runTriggerAgent(taskId, userMessage, history || [])
+      return { success: true, reply: result.reply, actions: result.actions }
     } catch (err: any) {
       return { success: false, error: err.message }
     }

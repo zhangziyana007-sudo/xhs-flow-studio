@@ -17,6 +17,12 @@ declare global {
         getOutput: (id: string) => Promise<{ images: string[]; dataJson: any; outputPath?: string }>
         aiConfig: (taskId: string, message: string, history?: any[]) => Promise<{ success: boolean; reply?: string; actions?: any[]; updatedTask?: any; error?: string }>
       }
+      agent: {
+        generate: (taskId: string, message: string, history?: any[]) => Promise<{ success: boolean; reply?: string; actions?: any[]; error?: string }>
+        style: (taskId: string, message: string, history?: any[]) => Promise<{ success: boolean; reply?: string; actions?: any[]; error?: string }>
+        preview: (taskId: string, message: string, history?: any[]) => Promise<{ success: boolean; reply?: string; actions?: any[]; error?: string }>
+        trigger: (taskId: string, message: string, history?: any[]) => Promise<{ success: boolean; reply?: string; actions?: any[]; error?: string }>
+      }
       creative: {
         createTask: (name?: string) => Promise<Task>
         run: (input: { urls?: string[]; text?: string; prompt?: string; taskId?: string }) => Promise<{ success: boolean; outputDir?: string; taskId?: string; error?: string }>

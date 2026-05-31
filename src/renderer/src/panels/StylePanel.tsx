@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ArrowRight, Play, Loader2, AlertCircle, Palette, Check } from 'lucide-react'
 import type { Task } from '../../../shared/types'
+import AgentChat from '../components/AgentChat'
 
 interface Props {
   taskId: string | null
@@ -124,6 +125,17 @@ export default function StylePanel({ taskId, onNext }: Props) {
             data.json + HTML模板 → 生成分页 HTML 文件 → 下一步截图生成 PNG 图片（3:4 比例 900×1200 @2x）
           </p>
         </div>
+
+        {/* AI Agent */}
+        {taskId && (
+          <AgentChat
+            taskId={taskId}
+            invoke={(tid, msg, hist) => api!.agent.style(tid, msg, hist)}
+            onAction={loadData}
+            placeholder="例如：帮我换成知识卡片模板，然后执行渲染"
+            description="AI 助手可以选择模板、执行渲染操作"
+          />
+        )}
       </div>
     </div>
   )

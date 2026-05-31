@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Sparkles, ArrowRight, Play, Loader2, AlertCircle, Settings, FileText } from 'lucide-react'
 import type { Task, GenerateConfig } from '../../../shared/types'
+import AgentChat from '../components/AgentChat'
 
 interface Props {
   taskId: string | null
@@ -193,6 +194,17 @@ export default function GeneratePanel({ taskId, onNext }: Props) {
             素材 markdown → DeepSeek API (JSON模式) → 结构化文案数据 → 保存为 data.json
           </p>
         </div>
+
+        {/* AI Agent */}
+        {taskId && (
+          <AgentChat
+            taskId={taskId}
+            invoke={(tid, msg, hist) => api!.agent.generate(tid, msg, hist)}
+            onAction={loadTask}
+            placeholder="例如：帮我切换到知识提炼模式，温度调高一点"
+            description="AI 助手可以直接帮你修改创作配置（模式、模型、提示词、温度）"
+          />
+        )}
       </div>
     </div>
   )

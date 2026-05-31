@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Clock, Play, Calendar, Loader2, Check } from 'lucide-react'
 import type { Task, TriggerConfig } from '../../../shared/types'
+import AgentChat from '../components/AgentChat'
 
 interface Props {
   taskId: string | null
@@ -140,6 +141,17 @@ export default function TriggerPanel({ taskId }: Props) {
             <span className="text-sm text-gray-600">启用此触发器</span>
           </label>
         </div>
+
+        {/* AI Agent */}
+        {taskId && (
+          <AgentChat
+            taskId={taskId}
+            invoke={(tid, msg, hist) => api!.agent.trigger(tid, msg, hist)}
+            onAction={loadTask}
+            placeholder="例如：设为每天早上 8 点执行 / 工作日 9:30 运行"
+            description="AI 助手可以直接帮你设置定时规则"
+          />
+        )}
       </div>
     </div>
   )

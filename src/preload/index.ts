@@ -40,6 +40,14 @@ const api = {
     aiConfig: (taskId: string, message: string, history?: any[]) => ipcRenderer.invoke('source:aiConfig', taskId, message, history)
   },
 
+  // Agent（各步骤 AI 助手）
+  agent: {
+    generate: (taskId: string, message: string, history?: any[]) => ipcRenderer.invoke('generate:agent', taskId, message, history),
+    style: (taskId: string, message: string, history?: any[]) => ipcRenderer.invoke('style:agent', taskId, message, history),
+    preview: (taskId: string, message: string, history?: any[]) => ipcRenderer.invoke('preview:agent', taskId, message, history),
+    trigger: (taskId: string, message: string, history?: any[]) => ipcRenderer.invoke('trigger:agent', taskId, message, history)
+  },
+
   // 知识创作（集成在任务卡片内）
   creative: {
     run: (input: { urls?: string[]; text?: string; prompt?: string; taskId?: string }) =>
