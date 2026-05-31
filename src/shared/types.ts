@@ -28,6 +28,15 @@ export interface SourceCard {
     keywords?: string[]
     maxItems?: number
   }
+  /** 输出规范 — 定义该数据源产出的数据格式 */
+  outputFormat?: {
+    type: 'news-list' | 'text' | 'structured'
+    // news-list: 标准新闻条目数组 [{title, summary, url, date, source}]
+    // text: 纯文本/markdown 直传
+    // structured: 自定义结构
+    description?: string        // 输出格式说明（给人看）
+    parsePrompt?: string        // 后处理 prompt：将原始输出转为期望格式
+  }
   lastRun?: {
     at: number
     outputFile?: string         // 输出的 markdown 文件路径

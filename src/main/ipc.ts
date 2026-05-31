@@ -186,23 +186,44 @@ export function registerIpcHandlers(): void {
     const baseUrl = settings.aiBaseUrl || 'https://api.deepseek.com'
     const model = settings.aiModel || 'deepseek-chat'
 
-    const systemPrompt = `你是 FlowStudio 数据源配置助手。用户会用自然语言描述他想获取的内容，你帮他生成对应的数据源卡片配置。
+    const systemPrompt = `你是 FlowStudio 数据源配置助手。用户会用自然语言描述他想获取的内容，你帮他生成完整的数据源卡片配置，包括输入配置和输出格式规范。
 
 可用数据源类型：
-1. api-fetch: 从 aihot.virxact.com API 拉取新闻，可选 category: ai-models/ai-coding/ai-agents/ai-products/industry/papers
+1. api-fetch: 从 aihot.virxact.com API 拉取新闻
+   - 输入: apiUrl, category(ai-models/ai-coding/ai-agents/ai-products/industry/papers), sinceHours, minCount
+   - 输出: 标准新闻列表 [{title, summary, url, date, source}]
 2. url-scrape: 抓取指定网页内容
+   - 输入: urls (URL数组)
+   - 输出: 网页正文文本
 3. rss: 订阅 RSS 源
-4. manual-text: 手动文本输入
+   - 输入: feedUrl
+   - 输出: 文章列表
+4. ai-search: 调用 LLM API 联网搜索获取信息
+   - 输入: llmBaseUrl(如 https://api.x.ai/v1), llmModel(如 grok-3), llmApiKey(留空让用户填), searchPrompt, enableWebSearch
+   - 输出: 由 parsePrompt 控制格式
+5. manual-text: 手动输入文本
+   - 输入: text
+   - 输出: 原文
 
 输出要求：
-- 返回一个 JSON 数组，每个元素是一个 SourceCard 配置
-- 格式: [{"name":"名称","type":"类型","runMode":"auto或manual","config":{...}}]
-- 对 api-fetch 类型: config 包含 apiUrl, category, sinceHours(默认24), minCount(默认25)
-- 对 url-scrape 类型: config 包含 urls 数组
-- 对 rss 类型: config 包含 feedUrl
-- 对 manual-text 类型: config 包含 text
+返回 JSON 对象 {"cards": [...]}，每个卡片包含：
+{
+  "name": "数据源名称",
+  "type": "类型",
+  "runMode": "auto 或 manual",
+  "config": { ... 输入配置 ... },
+  "outputFormat": {
+    "type": "news-list | text | structured",
+    "description": "人类可读的输出说明",
+    "parsePrompt": "（仅 ai-search/structured 需要）告诉 AI 将搜索结果按什么格式输出的指令"
+  }
+}
 
-只输出 JSON 数组，不要任何额外解释。`
+规则：
+- 对 ai-search 类型：searchPrompt 是让搜索模型执行的查询；parsePrompt 是告诉搜索模型输出格式的指令（合并到 searchPrompt 末尾）
+- 对 api-fetch 类型：outputFormat.type 固定为 "news-list"
+- llmApiKey 留空字符串（用户手动填写）
+- 只输出 JSON，不要额外解释`
 
     try {
       const resp = await fetch(`${baseUrl}/v1/chat/completions`, {

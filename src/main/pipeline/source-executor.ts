@@ -299,11 +299,16 @@ async function executeAiSearch(card: SourceCard, log: (msg: string) => void): Pr
   log(`  [AI搜索] 模型: ${model} | 联网: ${enableWebSearch ? '是' : '否'}`)
   log(`  [AI搜索] 提示: ${searchPrompt.slice(0, 80)}...`)
 
+  // 构建系统提示，包含输出格式要求
+  let systemContent = '你是一个信息搜索助手。请根据用户的查询要求，搜索并整理相关信息。用中文回复。'
+  if (card.outputFormat?.parsePrompt) {
+    systemContent += `\n\n输出格式要求：${card.outputFormat.parsePrompt}`
+  } else if (card.outputFormat?.type === 'news-list') {
+    systemContent += '\n\n输出格式：以 markdown 列表形式输出，每条信息包含标题、摘要、来源URL、发布时间。'
+  }
+
   const messages = [
-    {
-      role: 'system',
-      content: '你是一个信息搜索助手。请根据用户的查询要求，搜索并整理相关信息。输出格式为结构化的信息列表，每条信息包含标题、摘要、来源（如有）。用中文回复。'
-    },
+    { role: 'system', content: systemContent },
     { role: 'user', content: searchPrompt }
   ]
 

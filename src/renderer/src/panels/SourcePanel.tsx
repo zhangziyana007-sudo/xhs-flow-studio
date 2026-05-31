@@ -135,7 +135,8 @@ export default function SourcePanel({ taskId, onNext, onTaskNameChange }: Props)
       name: c.name || '数据源',
       type: c.type || 'api-fetch',
       runMode: c.runMode || 'auto',
-      config: c.config || {}
+      config: c.config || {},
+      outputFormat: c.outputFormat || undefined
     }))
     await saveCards([...cards, ...newCards])
     setAiSuggestions(null)
@@ -220,13 +221,16 @@ export default function SourcePanel({ taskId, onNext, onTaskNameChange }: Props)
               <div className="mt-3 space-y-2">
                 <p className="text-xs text-purple-700 font-medium">AI 建议添加以下数据源：</p>
                 {aiSuggestions.map((card, i) => (
-                  <div key={i} className="flex items-center gap-3 px-3 py-2 bg-white rounded-lg border border-purple-100 text-sm">
-                    <Database size={14} className="text-purple-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
+                  <div key={i} className="px-3 py-2.5 bg-white rounded-lg border border-purple-100 text-sm space-y-1">
+                    <div className="flex items-center gap-3">
+                      <Database size={14} className="text-purple-400 flex-shrink-0" />
                       <span className="font-medium text-gray-800">{card.name}</span>
-                      <span className="text-xs text-gray-400 ml-2">{card.type}</span>
-                      {card.config?.category && <span className="text-xs text-purple-400 ml-1">({card.config.category})</span>}
+                      <span className="text-xs text-gray-400">{card.type}</span>
+                      {card.config?.category && <span className="text-xs text-purple-400">({card.config.category})</span>}
                     </div>
+                    {card.outputFormat?.description && (
+                      <p className="text-[11px] text-gray-500 pl-7">输出: {card.outputFormat.description}</p>
+                    )}
                   </div>
                 ))}
                 <div className="flex gap-2 mt-2">
