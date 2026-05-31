@@ -31,6 +31,17 @@ SourceCard[] → executeSourceCards() → materials.md
     → screenshotPages() → images/*.png
 ```
 
+### Agent 架构（每步骤均配备 AI Agent）
+- **通用框架**: `pipeline-agent.ts` 提供 `runAgentLoop()` — Function Calling 循环
+- **各步骤 Agent**: 通过 DeepSeek Function Calling 直接操作配置/执行任务
+  - `source-agent.ts`: 添加/删除/修改数据源卡片
+  - `generate-agent.ts`: 设模式/模型/提示词/温度
+  - `style-agent.ts`: 选模板/执行渲染
+  - `preview-agent.ts`: 截图/全流程运行/查看输出
+  - `trigger-agent.ts`: 设 cron/预设/开关
+- **前端组件**: `AgentChat.tsx` 通用对话 UI，各面板复用
+- **设计理念**: AI 不是只给建议，而是直接帮用户操作
+
 ### 状态管理
 - 使用 React useState + IPC 调用
 - 持久化到 JSON 文件 (`userData/data/tasks.json`)
@@ -50,10 +61,17 @@ SourceCard[] → executeSourceCards() → materials.md
 |------|------|
 | `src/main/task-executor.ts` | 核心：任务执行调度、pipeline 编排 |
 | `src/main/ipc.ts` | 所有 IPC 通道注册 |
-| `src/main/pipeline/source-executor.ts` | 数据源执行（API/网页/RSS/文本） |
+| `src/main/pipeline-agent.ts` | Agent 通用框架（runAgentLoop） |
+| `src/main/source-agent.ts` | 素材步骤 Agent |
+| `src/main/generate-agent.ts` | AI 创作步骤 Agent |
+| `src/main/style-agent.ts` | 样式步骤 Agent |
+| `src/main/preview-agent.ts` | 预览步骤 Agent |
+| `src/main/trigger-agent.ts` | 触发步骤 Agent |
+| `src/main/pipeline/source-executor.ts` | 数据源执行（API/网页/RSS/AI搜索/文本） |
 | `src/main/pipeline/generate.ts` | DeepSeek AI 调用 |
+| `src/renderer/src/components/AgentChat.tsx` | 通用 Agent 对话 UI 组件 |
 | `src/renderer/src/App.tsx` | UI Shell + 导航逻辑 |
-| `src/renderer/src/panels/*.tsx` | 各功能面板 |
+| `src/renderer/src/panels/*.tsx` | 各功能面板（均集成 Agent） |
 | `src/shared/types.ts` | Task/SourceCard/Pipeline 等类型 |
 
 ## 当前功能状态
@@ -61,8 +79,9 @@ SourceCard[] → executeSourceCards() → materials.md
 | 功能 | 状态 |
 |------|------|
 | 任务 CRUD | ✅ 完成 |
-| 数据源配置（aihot API） | ✅ 完成 |
+| 数据源配置（aihot API + AI 搜索） | ✅ 完成 |
 | AI 生成（DeepSeek） | ✅ 完成 |
+| 每步骤 Agent（Function Calling） | ✅ 完成 |
 | HTML 模板渲染 | ✅ 完成 |
 | Playwright 截图 | ✅ 完成 |
 | 单步执行 | ✅ 完成 |
@@ -88,6 +107,10 @@ SourceCard[] → executeSourceCards() → materials.md
 1. `src/shared/types.ts` - SourceCard.type 联合
 2. `src/main/pipeline/source-executor.ts` - executeCard switch case
 3. `src/renderer/src/panels/SourcePanel.tsx` - sourceTypeInfo + 配置表单
+
+### 添加新 Agent 工具
+1. `src/main/<step>-agent.ts` - TOOLS 数组添加工具定义 + executor switch case
+2. Agent 工具通过 `pipeline-agent.ts` 的 `runAgentLoop()` 自动集成
 
 ## 外部 API
 

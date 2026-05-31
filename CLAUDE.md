@@ -1,6 +1,6 @@
 # FlowStudio 项目上下文
 
-> 供 AI 助手快速接管项目使用。最后更新：2025-05-31
+> 供 AI 助手快速接管项目使用。最后更新：2026-05-31
 
 ## 项目概述
 
@@ -31,6 +31,12 @@ FlowStudio/
 │   │   ├── ipc.ts              # IPC 通道处理器
 │   │   ├── task-executor.ts    # 任务执行引擎（全流水线编排）
 │   │   ├── task-store.ts       # JSON 文件持久化
+│   │   ├── pipeline-agent.ts   # Agent 通用框架 (runAgentLoop)
+│   │   ├── source-agent.ts     # 素材步骤 Agent
+│   │   ├── generate-agent.ts   # AI 创作步骤 Agent
+│   │   ├── style-agent.ts      # 样式步骤 Agent
+│   │   ├── preview-agent.ts    # 预览步骤 Agent
+│   │   ├── trigger-agent.ts    # 触发步骤 Agent
 │   │   └── pipeline/           # 各步骤实现
 │   │       ├── index.ts        # 统一导出
 │   │       ├── source-executor.ts  # 数据源卡片执行器
@@ -46,13 +52,15 @@ FlowStudio/
 │   │       ├── main.tsx        # React 入口
 │   │       ├── types/
 │   │       │   └── global.d.ts # window.api 类型声明
+│   │       ├── components/
+│   │       │   └── AgentChat.tsx  # 通用 Agent 对话 UI 组件
 │   │       ├── panels/
 │   │       │   ├── TaskPanel.tsx      # 任务列表管理
-│   │       │   ├── SourcePanel.tsx    # 素材数据源配置
-│   │       │   ├── GeneratePanel.tsx  # AI 创作配置
-│   │       │   ├── StylePanel.tsx     # 样式模板选择
-│   │       │   ├── PreviewPanel.tsx   # 预览 & 导出
-│   │       │   ├── TriggerPanel.tsx   # 触发器配置
+│   │       │   ├── SourcePanel.tsx    # 素材数据源配置 + Agent
+│   │       │   ├── GeneratePanel.tsx  # AI 创作配置 + Agent
+│   │       │   ├── StylePanel.tsx     # 样式模板选择 + Agent
+│   │       │   ├── PreviewPanel.tsx   # 预览 & 导出 + Agent
+│   │       │   ├── TriggerPanel.tsx   # 触发器配置 + Agent
 │   │       │   ├── MarketPanel.tsx    # 广场（模板市场）
 │   │       │   └── SettingsPanel.tsx  # 设置（API Key 等）
 │   │       └── styles/
@@ -87,6 +95,11 @@ FlowStudio/
 |------|------|
 | `scheduler:list/create/toggle/delete/runNow` | 任务 CRUD + 全流程执行 |
 | `task:get/update/runStep/getOutput` | 任务详情读写 + 单步执行 |
+| `source:aiConfig` | 素材步骤 Agent 对话 |
+| `generate:agent` | AI 创作步骤 Agent 对话 |
+| `style:agent` | 样式步骤 Agent 对话 |
+| `preview:agent` | 预览步骤 Agent 对话 |
+| `trigger:agent` | 触发步骤 Agent 对话 |
 | `creative:createTask/run` | 创建创作任务 |
 | `settings:get/set/testLLM` | 设置管理 |
 | `templates:list` | 模板列表 |
@@ -105,6 +118,29 @@ FlowStudio/
 - `rss`: RSS 订阅
 - `video-subtitle`: 视频字幕提取
 - `manual-text`: 手动输入文本
+- `ai-search`: LLM 联网搜索（xAI/OpenAI 兼容）
+
+## Agent 架构
+
+每个 Pipeline 步骤均配备独立的 AI Agent，通过 DeepSeek Function Calling 直接操作配置：
+
+```
+用户输入 → DeepSeek API (tools) → 调用工具函数 → 修改任务配置 → 返回结果
+         ↑                                            │
+         └──────────── 循环（最多5轮） ────────────┘
+```
+
+| Agent | 文件 | 工具能力 |
+|-------|------|----------|
+| 素材 | `source-agent.ts` | 添加/删除/修改数据源卡片 |
+| AI 创作 | `generate-agent.ts` | 设模式/模型/提示词/温度 |
+| 样式 | `style-agent.ts` | 选模板/执行渲染 |
+| 预览 | `preview-agent.ts` | 截图/全流程运行/查看输出 |
+| 触发 | `trigger-agent.ts` | 设 cron/预设/开关 |
+
+- **通用框架**: `pipeline-agent.ts` 导出 `runAgentLoop(systemPrompt, tools, userMessage, history, executor)`
+- **前端组件**: `AgentChat.tsx` 通用对话 UI，各面板通过 `invoke` prop 接入对应 Agent
+- **设计原则**: AI 不是只给建议，而是直接帮用户执行操作（修改配置、运行任务）
 
 ## UI 交互模式
 
@@ -131,9 +167,10 @@ interface Task {
 interface SourceCard {
   id: string
   name: string
-  type: 'api-fetch' | 'url-scrape' | 'rss' | 'video-subtitle' | 'manual-text'
+  type: 'api-fetch' | 'url-scrape' | 'rss' | 'video-subtitle' | 'manual-text' | 'ai-search'
   runMode: 'auto' | 'manual'
   config: { apiUrl?, category?, sinceHours?, urls?, feedUrl?, text?, ... }
+  outputFormat?: { type: string; description: string; parsePrompt: string }
 }
 ```
 
